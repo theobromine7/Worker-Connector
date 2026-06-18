@@ -1,0 +1,161 @@
+Build a complete production-ready worker marketplace application.
+
+Project Name: WorkerConnect
+
+Tech Stack:
+
+* React + Vite
+* TypeScript
+* TailwindCSS
+* Shadcn UI
+* Node.js + Express backend
+* PostgreSQL database
+* Prisma ORM
+* Firebase Phone OTP Authentication
+* Firebase Cloud Messaging (Push Notifications)
+* Razorpay Subscription API
+* Razorpay Payouts API
+
+Roles:
+
+1. Worker
+2. Admin
+
+Worker Features:
+
+1. Registration
+
+* Name
+* Mobile Number
+* Profile Photo
+* City
+* Skill Category
+* UPI ID
+* Razorpay AutoPay Subscription
+
+2. Authentication
+
+* Phone OTP login
+* JWT session management
+
+3. Dashboard
+
+* View available jobs
+* Filter by skill
+* Apply to jobs
+* View application status
+* View accepted jobs
+* View completed jobs
+* View earnings history
+
+4. Availability
+
+* Online / Offline toggle
+
+5. Notifications
+
+* Receive push notifications for jobs matching their skill category
+
+Admin Features:
+
+1. Secure Admin Login
+
+2. Worker Management
+
+* View all workers
+* Filter by skill
+* View subscription status
+* Suspend workers
+
+3. Job Management
+
+* Create job
+* Edit job
+* Cancel job
+* Assign skill category
+* Set payout amount
+* Set job location
+
+4. Applicant Management
+
+* View applicants
+* Accept worker
+* Reject worker
+* Notify accepted worker
+
+5. Job Completion
+
+* Mark job completed
+* Add completion notes
+
+6. Payments
+
+* Trigger payout to worker
+* Maintain payout history
+* Generate payout reports
+
+Database Models:
+
+Worker
+
+* id
+* name
+* phone
+* city
+* skill
+* upiId
+* profileImage
+* isOnline
+* subscriptionStatus
+* createdAt
+
+Job
+
+* id
+* title
+* description
+* skillRequired
+* location
+* payoutAmount
+* status
+* createdAt
+
+Application
+
+* id
+* workerId
+* jobId
+* status
+* appliedAt
+
+Payout
+
+* id
+* workerId
+* jobId
+* amount
+* status
+* transactionReference
+* paidAt
+
+Requirements:
+
+* Mobile-first responsive design
+* Dark mode support
+* Real-time updates using Socket.IO
+* Push notifications using Firebase FCM
+* Role-based authorization
+* Admin dashboard analytics
+* Clean architecture
+* Environment variables for secrets
+* Seed data
+* Production-ready code
+* Docker support
+* Complete setup instructions
+* Database migrations
+* API documentation
+* Error handling
+* Loading states
+* Search and filtering
+
+Generate all code, folder structure, database schema, API routes, frontend pages, reusable components, and deployment configuration required to run the application on Replit.

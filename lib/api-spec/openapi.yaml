@@ -3,13 +3,28 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: WorkerConnect API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: workers
+    description: Worker operations
+  - name: jobs
+    description: Job operations
+  - name: applications
+    description: Job application operations
+  - name: payouts
+    description: Payout operations
+  - name: admin
+    description: Admin operations
+  - name: analytics
+    description: Analytics and dashboard data
+
 paths:
   /healthz:
     get:
@@ -24,6 +39,582 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Auth ────────────────────────────────────────────────────────────────────
+
+  /auth/send-otp:
+    post:
+      operationId: sendOtp
+      tags: [auth]
+      summary: Send OTP to phone number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendOtpInput"
+      responses:
+        "200":
+          description: OTP sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Bad request
+
+  /auth/verify-otp:
+    post:
+      operationId: verifyOtp
+      tags: [auth]
+      summary: Verify OTP and get JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyOtpInput"
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid OTP
+
+  /auth/admin/login:
+    post:
+      operationId: adminLogin
+      tags: [auth]
+      summary: Admin login with password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          description: Unauthorized
+
+  # ── Workers ─────────────────────────────────────────────────────────────────
+
+  /workers/register:
+    post:
+      operationId: registerWorker
+      tags: [workers]
+      summary: Register a new worker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkerRegistration"
+      responses:
+        "201":
+          description: Worker registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Worker"
+        "400":
+          description: Validation error
+
+  /workers/me:
+    get:
+      operationId: getWorkerProfile
+      tags: [workers]
+      summary: Get current worker profile
+      responses:
+        "200":
+          description: Worker profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Worker"
+    patch:
+      operationId: updateWorkerProfile
+      tags: [workers]
+      summary: Update current worker profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkerUpdate"
+      responses:
+        "200":
+          description: Updated worker
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Worker"
+
+  /workers/me/availability:
+    patch:
+      operationId: toggleAvailability
+      tags: [workers]
+      summary: Toggle worker online/offline status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilityInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Worker"
+
+  /workers/me/fcm-token:
+    post:
+      operationId: updateFcmToken
+      tags: [workers]
+      summary: Register FCM push notification token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FcmTokenInput"
+      responses:
+        "200":
+          description: Token saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /workers/me/earnings:
+    get:
+      operationId: getWorkerEarnings
+      tags: [workers]
+      summary: Get earnings history for current worker
+      responses:
+        "200":
+          description: Earnings history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EarningsSummary"
+
+  # ── Jobs ────────────────────────────────────────────────────────────────────
+
+  /jobs:
+    get:
+      operationId: listJobs
+      tags: [jobs]
+      summary: List available jobs
+      parameters:
+        - name: skill
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: location
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Job"
+    post:
+      operationId: createJob
+      tags: [jobs]
+      summary: Create a new job (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobInput"
+      responses:
+        "201":
+          description: Job created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      summary: Get job details
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateJob
+      tags: [jobs]
+      summary: Update a job (admin)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobUpdate"
+      responses:
+        "200":
+          description: Updated job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+    delete:
+      operationId: cancelJob
+      tags: [jobs]
+      summary: Cancel a job (admin)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+
+  /jobs/{jobId}/complete:
+    post:
+      operationId: completeJob
+      tags: [jobs]
+      summary: Mark job as completed (admin)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobCompletionInput"
+      responses:
+        "200":
+          description: Job completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+
+  # ── Applications ─────────────────────────────────────────────────────────────
+
+  /jobs/{jobId}/applications:
+    get:
+      operationId: listJobApplications
+      tags: [applications]
+      summary: List applications for a job (admin)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Applications list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Application"
+    post:
+      operationId: applyToJob
+      tags: [applications]
+      summary: Apply to a job (worker)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Application submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /jobs/{jobId}/applications/{applicationId}:
+    patch:
+      operationId: updateApplication
+      tags: [applications]
+      summary: Accept or reject an application (admin)
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationStatusUpdate"
+      responses:
+        "200":
+          description: Application updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+
+  /workers/me/applications:
+    get:
+      operationId: listMyApplications
+      tags: [applications]
+      summary: List current worker's applications
+      responses:
+        "200":
+          description: My applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Application"
+
+  # ── Payouts ──────────────────────────────────────────────────────────────────
+
+  /payouts:
+    get:
+      operationId: listPayouts
+      tags: [payouts]
+      summary: List all payouts (admin)
+      parameters:
+        - name: workerId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payout list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payout"
+    post:
+      operationId: triggerPayout
+      tags: [payouts]
+      summary: Trigger a payout to a worker (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayoutInput"
+      responses:
+        "201":
+          description: Payout triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payout"
+
+  /payouts/me:
+    get:
+      operationId: listMyPayouts
+      tags: [payouts]
+      summary: List current worker's payouts
+      responses:
+        "200":
+          description: My payouts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payout"
+
+  # ── Admin - Workers ───────────────────────────────────────────────────────────
+
+  /admin/workers:
+    get:
+      operationId: adminListWorkers
+      tags: [admin]
+      summary: List all workers (admin)
+      parameters:
+        - name: skill
+          in: query
+          schema:
+            type: string
+        - name: subscriptionStatus
+          in: query
+          schema:
+            type: string
+        - name: isSuspended
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Workers list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Worker"
+
+  /admin/workers/{workerId}:
+    get:
+      operationId: adminGetWorker
+      tags: [admin]
+      summary: Get worker details (admin)
+      parameters:
+        - name: workerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Worker
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Worker"
+
+  /admin/workers/{workerId}/suspend:
+    post:
+      operationId: suspendWorker
+      tags: [admin]
+      summary: Suspend or unsuspend a worker (admin)
+      parameters:
+        - name: workerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuspendInput"
+      responses:
+        "200":
+          description: Worker updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Worker"
+
+  # ── Analytics ─────────────────────────────────────────────────────────────────
+
+  /analytics/dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [analytics]
+      summary: Get admin dashboard stats
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /analytics/payouts-report:
+    get:
+      operationId: getPayoutsReport
+      tags: [analytics]
+      summary: Get payout report grouped by skill and month
+      responses:
+        "200":
+          description: Payout report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayoutsReport"
+
+  /analytics/job-stats:
+    get:
+      operationId: getJobStats
+      tags: [analytics]
+      summary: Get job statistics by skill and status
+      responses:
+        "200":
+          description: Job stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +625,371 @@ components:
       required:
         - status
 
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    # ── Auth ──────────────────────────────────────────────────────────────────
+
+    SendOtpInput:
+      type: object
+      required: [phone]
+      properties:
+        phone:
+          type: string
+
+    VerifyOtpInput:
+      type: object
+      required: [phone, otp]
+      properties:
+        phone:
+          type: string
+        otp:
+          type: string
+
+    AdminLoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [token, role]
+      properties:
+        token:
+          type: string
+        role:
+          type: string
+        workerId:
+          type: ["integer", "null"]
+
+    MeResponse:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+        worker:
+          $ref: "#/components/schemas/Worker"
+
+    # ── Worker ────────────────────────────────────────────────────────────────
+
+    Worker:
+      type: object
+      required: [id, name, phone, city, skill, subscriptionStatus, isOnline, isSuspended, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        city:
+          type: string
+        skill:
+          type: string
+        upiId:
+          type: ["string", "null"]
+        profileImage:
+          type: ["string", "null"]
+        isOnline:
+          type: boolean
+        isSuspended:
+          type: boolean
+        subscriptionStatus:
+          type: string
+        fcmToken:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    WorkerRegistration:
+      type: object
+      required: [name, phone, city, skill]
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        city:
+          type: string
+        skill:
+          type: string
+        upiId:
+          type: string
+        profileImage:
+          type: string
+
+    WorkerUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+        upiId:
+          type: string
+        profileImage:
+          type: string
+
+    AvailabilityInput:
+      type: object
+      required: [isOnline]
+      properties:
+        isOnline:
+          type: boolean
+
+    FcmTokenInput:
+      type: object
+      required: [fcmToken]
+      properties:
+        fcmToken:
+          type: string
+
+    SuspendInput:
+      type: object
+      required: [isSuspended]
+      properties:
+        isSuspended:
+          type: boolean
+
+    EarningsSummary:
+      type: object
+      required: [totalEarned, totalJobs, payouts]
+      properties:
+        totalEarned:
+          type: number
+        totalJobs:
+          type: integer
+        payouts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Payout"
+
+    # ── Job ───────────────────────────────────────────────────────────────────
+
+    Job:
+      type: object
+      required: [id, title, description, skillRequired, location, payoutAmount, status, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        skillRequired:
+          type: string
+        location:
+          type: string
+        payoutAmount:
+          type: number
+        status:
+          type: string
+        completionNotes:
+          type: ["string", "null"]
+        assignedWorkerId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    JobInput:
+      type: object
+      required: [title, description, skillRequired, location, payoutAmount]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        skillRequired:
+          type: string
+        location:
+          type: string
+        payoutAmount:
+          type: number
+
+    JobUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        skillRequired:
+          type: string
+        location:
+          type: string
+        payoutAmount:
+          type: number
+        status:
+          type: string
+
+    JobCompletionInput:
+      type: object
+      required: [completionNotes]
+      properties:
+        completionNotes:
+          type: string
+
+    # ── Application ───────────────────────────────────────────────────────────
+
+    Application:
+      type: object
+      required: [id, workerId, jobId, status, appliedAt]
+      properties:
+        id:
+          type: integer
+        workerId:
+          type: integer
+        jobId:
+          type: integer
+        status:
+          type: string
+        appliedAt:
+          type: string
+        worker:
+          $ref: "#/components/schemas/Worker"
+        job:
+          $ref: "#/components/schemas/Job"
+
+    ApplicationStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    # ── Payout ────────────────────────────────────────────────────────────────
+
+    Payout:
+      type: object
+      required: [id, workerId, jobId, amount, status, createdAt]
+      properties:
+        id:
+          type: integer
+        workerId:
+          type: integer
+        jobId:
+          type: integer
+        amount:
+          type: number
+        status:
+          type: string
+        transactionReference:
+          type: ["string", "null"]
+        paidAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        worker:
+          $ref: "#/components/schemas/Worker"
+        job:
+          $ref: "#/components/schemas/Job"
+
+    PayoutInput:
+      type: object
+      required: [workerId, jobId, amount]
+      properties:
+        workerId:
+          type: integer
+        jobId:
+          type: integer
+        amount:
+          type: number
+
+    # ── Analytics ─────────────────────────────────────────────────────────────
+
+    DashboardStats:
+      type: object
+      required: [totalWorkers, activeWorkers, totalJobs, openJobs, completedJobs, totalPayouts, pendingPayouts, totalPaidAmount]
+      properties:
+        totalWorkers:
+          type: integer
+        activeWorkers:
+          type: integer
+        totalJobs:
+          type: integer
+        openJobs:
+          type: integer
+        completedJobs:
+          type: integer
+        totalPayouts:
+          type: integer
+        pendingPayouts:
+          type: integer
+        totalPaidAmount:
+          type: number
+
+    PayoutsReport:
+      type: object
+      required: [bySkill, byMonth]
+      properties:
+        bySkill:
+          type: array
+          items:
+            $ref: "#/components/schemas/PayoutBySkill"
+        byMonth:
+          type: array
+          items:
+            $ref: "#/components/schemas/PayoutByMonth"
+
+    PayoutBySkill:
+      type: object
+      required: [skill, totalAmount, count]
+      properties:
+        skill:
+          type: string
+        totalAmount:
+          type: number
+        count:
+          type: integer
+
+    PayoutByMonth:
+      type: object
+      required: [month, totalAmount, count]
+      properties:
+        month:
+          type: string
+        totalAmount:
+          type: number
+        count:
+          type: integer
+
+    JobStats:
+      type: object
+      required: [bySkill, byStatus]
+      properties:
+        bySkill:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobBySkill"
+        byStatus:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobByStatus"
+
+    JobBySkill:
+      type: object
+      required: [skill, count]
+      properties:
+        skill:
+          type: string
+        count:
+          type: integer
+
+    JobByStatus:
+      type: object
+      required: [status, count]
+      properties:
+        status:
+          type: string
+        count:
+          type: integer

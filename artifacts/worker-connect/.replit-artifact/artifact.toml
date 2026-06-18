@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "WorkerConnect"
+version = "1.0.0"
+id = "artifacts/worker-connect"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21610
+
+[services.development]
+run = "pnpm --filter @workspace/worker-connect run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/worker-connect", "run", "build" ]
+publicDir = "artifacts/worker-connect/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21610"
+BASE_PATH = "/"

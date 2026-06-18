@@ -1,0 +1,3 @@
+- [WorkerConnect auth pattern](workerconnect-auth.md) — JWT in localStorage; OTP demo mode logs code to server; bcrypt needs pnpm approve-builds after install.
+- [DB lib rebuild rule](db-lib-rebuild.md) — after editing lib/db schema, always run `pnpm run typecheck:libs` before leaf artifact typechecks or "missing export" errors appear.
+- [Wouter Link rule](wouter-link.md) — wouter's Link already renders as <a>; never wrap with another <a> (causes hydration errors).
