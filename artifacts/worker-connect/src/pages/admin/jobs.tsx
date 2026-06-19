@@ -57,7 +57,7 @@ export default function AdminJobs() {
     if (!isAuthenticated || !isAdmin) setLocation("/admin/login");
   }, [isAuthenticated, isAdmin, setLocation]);
 
-  const { data: jobs, isLoading } = useListJobs({ skill: skillFilter || undefined, status: statusFilter || undefined });
+  const { data: jobs, isLoading } = useListJobs({ skill: skillFilter !== "all" ? skillFilter : undefined, status: statusFilter !== "all" ? statusFilter : undefined });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: getListJobsQueryKey() });
 
@@ -146,12 +146,14 @@ export default function AdminJobs() {
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0">
+                        {(job.status === "open" || job.status === "assigned") && (
+                          <Link href={`/admin/jobs/${job.id}/applicants`} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-border text-sm font-medium hover:bg-accent transition-colors" data-testid={`button-applicants-${job.id}`}>
+                            <Users className="h-3.5 w-3.5" />
+                            Applicants
+                          </Link>
+                        )}
                         {job.status === "open" && (
                           <>
-                            <Link href={`/admin/jobs/${job.id}/applicants`} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-border text-sm font-medium hover:bg-accent transition-colors" data-testid={`button-applicants-${job.id}`}>
-                              <Users className="h-3.5 w-3.5" />
-                              Applicants
-                            </Link>
                             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditJob({ id: job.id, form: { title: job.title, description: job.description, skillRequired: job.skillRequired, location: job.location, payoutAmount: String(job.payoutAmount) } })} data-testid={`button-edit-job-${job.id}`}>
                               <Edit className="h-3.5 w-3.5" />
                             </Button>
