@@ -92,13 +92,13 @@ export default function WorkerEarnings() {
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <p className="font-medium text-sm">{payout.job?.title ?? `Job #${payout.jobId}`}</p>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
                               {format(new Date(payout.createdAt), "MMM d, yyyy")}
                             </span>
                             {payout.transactionReference && (
-                              <span>Ref: {payout.transactionReference}</span>
+                              <span className="truncate max-w-[140px]">Ref: {payout.transactionReference}</span>
                             )}
                           </div>
                         </div>

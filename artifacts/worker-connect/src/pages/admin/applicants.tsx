@@ -97,7 +97,7 @@ export default function AdminApplicants() {
               return (
                 <Card key={app.id} data-testid={`card-applicant-${app.id}`}>
                   <CardContent className="pt-4 pb-4">
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold shrink-0">
                           {app.worker?.name.charAt(0).toUpperCase() ?? "W"}
@@ -111,7 +111,7 @@ export default function AdminApplicants() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant={config.variant}>{config.label}</Badge>
                         {app.status === "pending" && (
                           <>
