@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import {
   useListJobApplications, useUpdateApplication, useGetJob,
-  getListJobApplicationsQueryKey,
+  getListJobApplicationsQueryKey, getListJobsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/admin-layout";
@@ -50,6 +50,7 @@ export default function AdminApplicants() {
         const action = variables.data.status === "accepted" ? "accepted" : "rejected";
         toast({ title: `Applicant ${action}` });
         queryClient.invalidateQueries({ queryKey: getListJobApplicationsQueryKey(jobId) });
+        queryClient.invalidateQueries({ queryKey: getListJobsQueryKey() });
       },
       onError: (_err, _vars, context: { previous: typeof applications } | undefined) => {
         if (context?.previous) queryClient.setQueryData(getListJobApplicationsQueryKey(jobId), context.previous);
