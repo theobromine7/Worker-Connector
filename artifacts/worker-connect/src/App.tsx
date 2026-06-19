@@ -17,6 +17,7 @@ import AdminWorkers from "@/pages/admin/workers";
 import AdminJobs from "@/pages/admin/jobs";
 import AdminApplicants from "@/pages/admin/applicants";
 import AdminPayouts from "@/pages/admin/payouts";
+import PwaInstallPrompt from "@/components/pwa-install-prompt";
 
 setAuthTokenGetter(() => localStorage.getItem("workerconnect_token"));
 
@@ -59,6 +60,7 @@ function App() {
             <Router />
           </WouterRouter>
           <Toaster />
+          <PwaInstallPrompt />
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>
