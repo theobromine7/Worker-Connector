@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const { toast } = useToast();
   const [step, setStep] = useState<"form" | "otp">("form");
   const [otp, setOtp] = useState("");
+  const [devOtp, setDevOtp] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -27,9 +28,14 @@ export default function RegisterPage() {
 
   const sendOtp = useSendOtp({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (data) => {
         setStep("otp");
-        toast({ title: "OTP sent to your phone" });
+        const match = data.message?.match(/Dev mode: (\d{6})/);
+        if (match) {
+          setDevOtp(match[1]);
+          setOtp(match[1]);
+        }
+        toast({ title: "OTP sent" });
       },
       onError: () => {
         toast({ title: "Failed to send OTP", variant: "destructive" });
@@ -170,6 +176,13 @@ export default function RegisterPage() {
               </form>
             ) : (
               <form onSubmit={handleOtpSubmit} className="space-y-4">
+                {devOtp && (
+                  <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm dark:bg-amber-950/30 dark:border-amber-800">
+                    <span className="text-amber-600 dark:text-amber-400 font-medium">Dev OTP:</span>
+                    <span className="font-mono font-bold tracking-widest text-amber-700 dark:text-amber-300">{devOtp}</span>
+                    <span className="text-amber-500 text-xs ml-auto">(pre-filled)</span>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="otp">One-Time Password</Label>
                   <Input
