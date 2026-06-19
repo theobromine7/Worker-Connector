@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
-import { db, workersTable, payoutsTable, otpsTable } from "@workspace/db";
-import { eq, and, gt } from "drizzle-orm";
+import bcrypt from "bcrypt";
+import { db, workersTable, payoutsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { requireWorker } from "../middlewares/auth";
 import {
   RegisterWorkerBody,
@@ -19,32 +20,13 @@ router.post("/workers/register", async (req, res): Promise<void> => {
     return;
   }
 
-  // Verify OTP
-  const [otpRecord] = await db
-    .select()
-    .from(otpsTable)
-    .where(
-      and(
-        eq(otpsTable.phone, parsed.data.phone),
-        eq(otpsTable.code, parsed.data.otp),
-        eq(otpsTable.used, false),
-        gt(otpsTable.expiresAt, new Date())
-      )
-    )
-    .limit(1);
-
-  if (!otpRecord) {
-    res.status(401).json({ error: "Invalid or expired OTP" });
-    return;
-  }
-
   const existing = await db.select().from(workersTable).where(eq(workersTable.phone, parsed.data.phone)).limit(1);
   if (existing.length > 0) {
     res.status(409).json({ error: "Phone number already registered" });
     return;
   }
 
-  await db.update(otpsTable).set({ used: true }).where(eq(otpsTable.id, otpRecord.id));
+  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
 
   const [worker] = await db.insert(workersTable).values({
     name: parsed.data.name,
@@ -56,6 +38,7 @@ router.post("/workers/register", async (req, res): Promise<void> => {
     isOnline: false,
     isSuspended: false,
     subscriptionStatus: "inactive",
+    passwordHash,
   }).returning();
 
   res.status(201).json(worker);

@@ -13,6 +13,7 @@ export const workersTable = pgTable("workers", {
   isOnline: boolean("is_online").notNull().default(false),
   isSuspended: boolean("is_suspended").notNull().default(false),
   subscriptionStatus: text("subscription_status").notNull().default("inactive"),
+  passwordHash: text("password_hash"),
   fcmToken: text("fcm_token"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

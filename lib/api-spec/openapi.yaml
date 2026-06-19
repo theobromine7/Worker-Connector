@@ -42,38 +42,17 @@ paths:
 
   # ── Auth ────────────────────────────────────────────────────────────────────
 
-  /auth/send-otp:
+  /auth/worker/login:
     post:
-      operationId: sendOtp
+      operationId: workerLogin
       tags: [auth]
-      summary: Send OTP to phone number
+      summary: Worker login with phone and password
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SendOtpInput"
-      responses:
-        "200":
-          description: OTP sent
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MessageResponse"
-        "400":
-          description: Bad request
-
-  /auth/verify-otp:
-    post:
-      operationId: verifyOtp
-      tags: [auth]
-      summary: Verify OTP and get JWT token
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/VerifyOtpInput"
+              $ref: "#/components/schemas/WorkerLoginInput"
       responses:
         "200":
           description: Authenticated
@@ -82,7 +61,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
         "401":
-          description: Invalid OTP
+          description: Invalid credentials
 
   /auth/admin/login:
     post:
@@ -667,20 +646,13 @@ components:
 
     # ── Auth ──────────────────────────────────────────────────────────────────
 
-    SendOtpInput:
+    WorkerLoginInput:
       type: object
-      required: [phone]
+      required: [phone, password]
       properties:
         phone:
           type: string
-
-    VerifyOtpInput:
-      type: object
-      required: [phone, otp]
-      properties:
-        phone:
-          type: string
-        otp:
+        password:
           type: string
 
     AdminLoginInput:
@@ -747,7 +719,7 @@ components:
 
     WorkerRegistration:
       type: object
-      required: [name, phone, city, skill, otp]
+      required: [name, phone, city, skill, password]
       properties:
         name:
           type: string
@@ -757,7 +729,7 @@ components:
           type: string
         skill:
           type: string
-        otp:
+        password:
           type: string
         upiId:
           type: string

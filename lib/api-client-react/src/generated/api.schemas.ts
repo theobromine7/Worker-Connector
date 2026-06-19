@@ -13,13 +13,9 @@ export interface MessageResponse {
   message: string;
 }
 
-export interface SendOtpInput {
+export interface WorkerLoginInput {
   phone: string;
-}
-
-export interface VerifyOtpInput {
-  phone: string;
-  otp: string;
+  password: string;
 }
 
 export interface AdminLoginInput {
@@ -62,7 +58,7 @@ export interface WorkerRegistration {
   phone: string;
   city: string;
   skill: string;
-  otp: string;
+  password: string;
   upiId?: string;
   profileImage?: string;
 }

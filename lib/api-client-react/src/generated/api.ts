@@ -43,11 +43,10 @@ import type {
   Payout,
   PayoutInput,
   PayoutsReport,
-  SendOtpInput,
   SuspendInput,
   UpdateAdminProfileInput,
-  VerifyOtpInput,
   Worker,
+  WorkerLoginInput,
   WorkerRegistration,
   WorkerUpdate
 } from './api.schemas';
@@ -142,37 +141,37 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
-export const getSendOtpUrl = () => {
+export const getWorkerLoginUrl = () => {
 
 
 
 
-  return `/api/auth/send-otp`
+  return `/api/auth/worker/login`
 }
 
 /**
- * @summary Send OTP to phone number
+ * @summary Worker login with phone and password
  */
-export const sendOtp = async (sendOtpInput: SendOtpInput, options?: RequestInit): Promise<MessageResponse> => {
+export const workerLogin = async (workerLoginInput: WorkerLoginInput, options?: RequestInit): Promise<AuthResponse> => {
 
-  return customFetch<MessageResponse>(getSendOtpUrl(),
+  return customFetch<AuthResponse>(getWorkerLoginUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      sendOtpInput,)
+      workerLoginInput,)
   }
 );}
 
 
 
 
-export const getSendOtpMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendOtp>>, TError,{data: BodyType<SendOtpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof sendOtp>>, TError,{data: BodyType<SendOtpInput>}, TContext> => {
+export const getWorkerLoginMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof workerLogin>>, TError,{data: BodyType<WorkerLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof workerLogin>>, TError,{data: BodyType<WorkerLoginInput>}, TContext> => {
 
-const mutationKey = ['sendOtp'];
+const mutationKey = ['workerLogin'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -182,10 +181,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendOtp>>, {data: BodyType<SendOtpInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof workerLogin>>, {data: BodyType<WorkerLoginInput>}> = (props) => {
           const {data} = props ?? {};
 
-          return  sendOtp(data,requestOptions)
+          return  workerLogin(data,requestOptions)
         }
 
 
@@ -195,93 +194,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type SendOtpMutationResult = NonNullable<Awaited<ReturnType<typeof sendOtp>>>
-    export type SendOtpMutationBody = BodyType<SendOtpInput>
-    export type SendOtpMutationError = ErrorType<void>
+    export type WorkerLoginMutationResult = NonNullable<Awaited<ReturnType<typeof workerLogin>>>
+    export type WorkerLoginMutationBody = BodyType<WorkerLoginInput>
+    export type WorkerLoginMutationError = ErrorType<void>
 
     /**
- * @summary Send OTP to phone number
+ * @summary Worker login with phone and password
  */
-export const useSendOtp = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendOtp>>, TError,{data: BodyType<SendOtpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useWorkerLogin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof workerLogin>>, TError,{data: BodyType<WorkerLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof sendOtp>>,
+        Awaited<ReturnType<typeof workerLogin>>,
         TError,
-        {data: BodyType<SendOtpInput>},
+        {data: BodyType<WorkerLoginInput>},
         TContext
       > => {
-      return useMutation(getSendOtpMutationOptions(options));
-    }
-
-export const getVerifyOtpUrl = () => {
-
-
-
-
-  return `/api/auth/verify-otp`
-}
-
-/**
- * @summary Verify OTP and get JWT token
- */
-export const verifyOtp = async (verifyOtpInput: VerifyOtpInput, options?: RequestInit): Promise<AuthResponse> => {
-
-  return customFetch<AuthResponse>(getVerifyOtpUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      verifyOtpInput,)
-  }
-);}
-
-
-
-
-export const getVerifyOtpMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyOtp>>, TError,{data: BodyType<VerifyOtpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof verifyOtp>>, TError,{data: BodyType<VerifyOtpInput>}, TContext> => {
-
-const mutationKey = ['verifyOtp'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyOtp>>, {data: BodyType<VerifyOtpInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  verifyOtp(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type VerifyOtpMutationResult = NonNullable<Awaited<ReturnType<typeof verifyOtp>>>
-    export type VerifyOtpMutationBody = BodyType<VerifyOtpInput>
-    export type VerifyOtpMutationError = ErrorType<void>
-
-    /**
- * @summary Verify OTP and get JWT token
- */
-export const useVerifyOtp = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyOtp>>, TError,{data: BodyType<VerifyOtpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof verifyOtp>>,
-        TError,
-        {data: BodyType<VerifyOtpInput>},
-        TContext
-      > => {
-      return useMutation(getVerifyOtpMutationOptions(options));
+      return useMutation(getWorkerLoginMutationOptions(options));
     }
 
 export const getAdminLoginUrl = () => {

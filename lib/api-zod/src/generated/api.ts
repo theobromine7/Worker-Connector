@@ -18,26 +18,14 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * @summary Send OTP to phone number
+ * @summary Worker login with phone and password
  */
-export const SendOtpBody = zod.object({
-  "phone": zod.string()
-})
-
-export const SendOtpResponse = zod.object({
-  "message": zod.string()
-})
-
-
-/**
- * @summary Verify OTP and get JWT token
- */
-export const VerifyOtpBody = zod.object({
+export const WorkerLoginBody = zod.object({
   "phone": zod.string(),
-  "otp": zod.string()
+  "password": zod.string()
 })
 
-export const VerifyOtpResponse = zod.object({
+export const WorkerLoginResponse = zod.object({
   "token": zod.string(),
   "role": zod.string(),
   "workerId": zod.number().nullish()
@@ -89,7 +77,7 @@ export const RegisterWorkerBody = zod.object({
   "phone": zod.string(),
   "city": zod.string(),
   "skill": zod.string(),
-  "otp": zod.string(),
+  "password": zod.string(),
   "upiId": zod.string().optional(),
   "profileImage": zod.string().optional()
 })

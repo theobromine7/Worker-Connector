@@ -1,76 +1,40 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcrypt";
-import { db, workersTable, otpsTable, adminsTable } from "@workspace/db";
-import { eq, and, gt } from "drizzle-orm";
+import { db, workersTable, adminsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { signToken, authenticate } from "../middlewares/auth";
 import {
-  SendOtpBody,
-  VerifyOtpBody,
+  WorkerLoginBody,
   AdminLoginBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-function generateOtp(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
-// POST /auth/send-otp
-router.post("/auth/send-otp", async (req, res): Promise<void> => {
-  const parsed = SendOtpBody.safeParse(req.body);
+// POST /auth/worker/login
+router.post("/auth/worker/login", async (req, res): Promise<void> => {
+  const parsed = WorkerLoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { phone } = parsed.data;
-
-  // Invalidate old OTPs
-  await db.update(otpsTable).set({ used: true }).where(eq(otpsTable.phone, phone));
-
-  const code = generateOtp();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-  await db.insert(otpsTable).values({ phone, code, used: false, expiresAt });
-
-  req.log.info({ phone, code }, "OTP generated"); // In production, send via SMS
-  res.json({ message: `OTP sent to ${phone}. (Dev mode: ${code})` });
-});
-
-// POST /auth/verify-otp
-router.post("/auth/verify-otp", async (req, res): Promise<void> => {
-  const parsed = VerifyOtpBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const { phone, otp } = parsed.data;
-
-  const [otpRecord] = await db
-    .select()
-    .from(otpsTable)
-    .where(
-      and(
-        eq(otpsTable.phone, phone),
-        eq(otpsTable.code, otp),
-        eq(otpsTable.used, false),
-        gt(otpsTable.expiresAt, new Date())
-      )
-    )
-    .limit(1);
-
-  if (!otpRecord) {
-    res.status(401).json({ error: "Invalid or expired OTP" });
-    return;
-  }
+  const { phone, password } = parsed.data;
 
   const [worker] = await db.select().from(workersTable).where(eq(workersTable.phone, phone)).limit(1);
-
   if (!worker) {
-    res.status(401).json({ error: "Phone not registered. Please register first." });
+    res.status(401).json({ error: "Phone number not registered" });
     return;
   }
 
-  await db.update(otpsTable).set({ used: true }).where(eq(otpsTable.id, otpRecord.id));
+  if (!worker.passwordHash) {
+    res.status(401).json({ error: "Account has no password set. Please re-register." });
+    return;
+  }
+
+  const valid = await bcrypt.compare(password, worker.passwordHash);
+  if (!valid) {
+    res.status(401).json({ error: "Incorrect password" });
+    return;
+  }
 
   if (worker.isSuspended) {
     res.status(403).json({ error: "Account suspended. Contact admin." });
