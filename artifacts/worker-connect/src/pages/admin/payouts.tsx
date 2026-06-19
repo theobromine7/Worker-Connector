@@ -46,7 +46,7 @@ export default function AdminPayouts() {
 
   const { data: payouts, isLoading } = useListPayouts({ status: statusFilter !== "all" ? statusFilter : undefined });
   const { data: workers } = useAdminListWorkers({});
-  const { data: jobs } = useListJobs({ status: "completed" });
+  const { data: jobs } = useListJobs({ status: undefined });
 
   const trigger = useTriggerPayout({
     mutation: {

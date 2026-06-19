@@ -38,12 +38,23 @@ export default function AdminApplicants() {
 
   const updateApp = useUpdateApplication({
     mutation: {
+      onMutate: async (variables) => {
+        await queryClient.cancelQueries({ queryKey: getListJobApplicationsQueryKey(jobId) });
+        const previous = queryClient.getQueryData(getListJobApplicationsQueryKey(jobId));
+        queryClient.setQueryData(getListJobApplicationsQueryKey(jobId), (old: typeof applications) =>
+          old?.map((a) => a.id === variables.applicationId ? { ...a, status: variables.data.status } : a)
+        );
+        return { previous };
+      },
       onSuccess: (_, variables) => {
         const action = variables.data.status === "accepted" ? "accepted" : "rejected";
         toast({ title: `Applicant ${action}` });
         queryClient.invalidateQueries({ queryKey: getListJobApplicationsQueryKey(jobId) });
       },
-      onError: () => toast({ title: "Action failed", variant: "destructive" }),
+      onError: (_err, _vars, context: { previous: typeof applications } | undefined) => {
+        if (context?.previous) queryClient.setQueryData(getListJobApplicationsQueryKey(jobId), context.previous);
+        toast({ title: "Action failed", variant: "destructive" });
+      },
     },
   });
 
