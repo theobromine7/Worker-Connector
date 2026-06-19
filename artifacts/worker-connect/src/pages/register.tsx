@@ -48,8 +48,9 @@ export default function RegisterPage() {
       onSuccess: () => {
         registerWorker.mutate({ data: form });
       },
-      onError: () => {
-        toast({ title: "Invalid OTP", variant: "destructive" });
+      onError: (error) => {
+        const msg = (error?.data as { error?: string } | null)?.error ?? error?.message ?? "Invalid OTP";
+        toast({ title: msg, variant: "destructive" });
       },
     },
   });

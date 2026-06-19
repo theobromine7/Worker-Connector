@@ -49,8 +49,9 @@ export default function LoginPage() {
           setLocation("/worker/dashboard");
         }
       },
-      onError: () => {
-        toast({ title: "Invalid OTP. Please try again.", variant: "destructive" });
+      onError: (error) => {
+        const msg = (error?.data as { error?: string } | null)?.error ?? error?.message ?? "Failed to verify OTP";
+        toast({ title: msg, variant: "destructive" });
       },
     },
   });

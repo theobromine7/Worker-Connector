@@ -63,14 +63,14 @@ router.post("/auth/verify-otp", async (req, res): Promise<void> => {
     return;
   }
 
-  await db.update(otpsTable).set({ used: true }).where(eq(otpsTable.id, otpRecord.id));
-
   const [worker] = await db.select().from(workersTable).where(eq(workersTable.phone, phone)).limit(1);
 
   if (!worker) {
-    res.status(401).json({ error: "Phone number not registered. Please register first." });
+    res.status(401).json({ error: "Phone not registered. Please register first." });
     return;
   }
+
+  await db.update(otpsTable).set({ used: true }).where(eq(otpsTable.id, otpRecord.id));
 
   if (worker.isSuspended) {
     res.status(403).json({ error: "Account suspended. Contact admin." });
