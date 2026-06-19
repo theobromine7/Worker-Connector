@@ -62,6 +62,7 @@ export interface WorkerRegistration {
   phone: string;
   city: string;
   skill: string;
+  otp: string;
   upiId?: string;
   profileImage?: string;
 }

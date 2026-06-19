@@ -713,7 +713,7 @@ components:
 
     WorkerRegistration:
       type: object
-      required: [name, phone, city, skill]
+      required: [name, phone, city, skill, otp]
       properties:
         name:
           type: string
@@ -722,6 +722,8 @@ components:
         city:
           type: string
         skill:
+          type: string
+        otp:
           type: string
         upiId:
           type: string

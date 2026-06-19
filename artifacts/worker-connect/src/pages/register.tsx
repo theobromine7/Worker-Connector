@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useRegisterWorker, useSendOtp, useVerifyOtp } from "@workspace/api-client-react";
+import { useRegisterWorker, useSendOtp } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,26 +43,15 @@ export default function RegisterPage() {
     },
   });
 
-  const verifyOtp = useVerifyOtp({
-    mutation: {
-      onSuccess: () => {
-        registerWorker.mutate({ data: form });
-      },
-      onError: (error) => {
-        const msg = (error?.data as { error?: string } | null)?.error ?? error?.message ?? "Invalid OTP";
-        toast({ title: msg, variant: "destructive" });
-      },
-    },
-  });
-
   const registerWorker = useRegisterWorker({
     mutation: {
       onSuccess: () => {
         toast({ title: "Registration successful! Please login." });
         setLocation("/login");
       },
-      onError: () => {
-        toast({ title: "Registration failed. Phone may already be registered.", variant: "destructive" });
+      onError: (error) => {
+        const msg = (error?.data as { error?: string } | null)?.error ?? error?.message ?? "Registration failed";
+        toast({ title: msg, variant: "destructive" });
       },
     },
   });
@@ -78,10 +67,10 @@ export default function RegisterPage() {
 
   function handleOtpSubmit(e: React.FormEvent) {
     e.preventDefault();
-    verifyOtp.mutate({ data: { phone: form.phone, otp } });
+    registerWorker.mutate({ data: { ...form, otp } });
   }
 
-  const isPending = sendOtp.isPending || verifyOtp.isPending || registerWorker.isPending;
+  const isPending = sendOtp.isPending || registerWorker.isPending;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background via-secondary/30 to-primary/5 p-4">

@@ -89,6 +89,7 @@ export const RegisterWorkerBody = zod.object({
   "phone": zod.string(),
   "city": zod.string(),
   "skill": zod.string(),
+  "otp": zod.string(),
   "upiId": zod.string().optional(),
   "profileImage": zod.string().optional()
 })
