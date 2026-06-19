@@ -8,6 +8,7 @@ import {
   getGetAdminProfileQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { QRCodeSVG } from "qrcode.react";
 import AdminLayout from "@/components/admin-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,13 +17,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, CheckCircle2, Clock, Pencil, ArrowRight, Wallet } from "lucide-react";
-import { format } from "date-fns";
+import { DollarSign, CheckCircle2, Clock, Pencil, ArrowRight, Wallet, Smartphone, ScanLine } from "lucide-react";
 
 type PayJob = {
   jobId: number;
@@ -33,6 +34,11 @@ type PayJob = {
   amount: number;
 };
 
+function buildUpiUrl(pa: string, pn: string, am: number, tn: string) {
+  const params = new URLSearchParams({ pa, pn, am: am.toFixed(2), cu: "INR", tn });
+  return `upi://pay?${params.toString()}`;
+}
+
 export default function AdminPayouts() {
   const [, setLocation] = useLocation();
   const { isAuthenticated, isAdmin } = useAuth();
@@ -40,9 +46,10 @@ export default function AdminPayouts() {
   const queryClient = useQueryClient();
 
   const [pendingComplete, setPendingComplete] = useState<{ jobId: number; title: string } | null>(null);
-  const [pendingPay, setPendingPay] = useState<PayJob | null>(null);
+  const [payDialogJob, setPayDialogJob] = useState<PayJob | null>(null);
   const [editingAdminUpi, setEditingAdminUpi] = useState(false);
   const [adminUpiDraft, setAdminUpiDraft] = useState("");
+  const [paymentSent, setPaymentSent] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) setLocation("/admin/login");
@@ -54,15 +61,11 @@ export default function AdminPayouts() {
   const { data: adminProfile } = useGetAdminProfile();
 
   const workerMap = new Map(workers?.map((w) => [w.id, w]) ?? []);
-
-  // Map jobId → existing payout (only paid ones count as "done")
   const payoutByJob = new Map(payouts?.map((p) => [p.jobId, p]) ?? []);
 
-  // Jobs that are "assigned" (worker accepted, pending confirmation) or "completed"
   const activeJobs = (allJobs ?? []).filter(
     (j) => (j.status === "assigned" || j.status === "completed") && j.assignedWorkerId != null
   );
-
   const assignedJobs = activeJobs.filter((j) => j.status === "assigned");
   const completedJobs = activeJobs.filter((j) => j.status === "completed");
 
@@ -93,31 +96,40 @@ export default function AdminPayouts() {
   const triggerPayout = useTriggerPayout({
     mutation: {
       onSuccess: () => {
-        toast({ title: "Payment sent successfully!" });
+        toast({ title: "Payment recorded successfully!" });
         queryClient.invalidateQueries({ queryKey: getListPayoutsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListJobsQueryKey() });
-        setPendingPay(null);
+        setPayDialogJob(null);
+        setPaymentSent(false);
       },
-      onError: () => toast({ title: "Failed to send payment", variant: "destructive" }),
+      onError: () => toast({ title: "Failed to record payment", variant: "destructive" }),
     },
   });
 
-  function buildPayJob(jobId: number): PayJob | null {
+  function openPayDialog(jobId: number) {
     const job = allJobs?.find((j) => j.id === jobId);
-    if (!job || !job.assignedWorkerId) return null;
+    if (!job || !job.assignedWorkerId) return;
     const worker = workerMap.get(job.assignedWorkerId);
-    if (!worker) return null;
-    return {
+    if (!worker) return;
+    setPaymentSent(false);
+    setPayDialogJob({
       jobId: job.id,
       workerId: worker.id,
       workerName: worker.name,
       workerUpi: worker.upiId ?? null,
       jobTitle: job.title,
       amount: Number(job.payoutAmount),
-    };
+    });
   }
 
-  const isLoading = jobsLoading;
+  const upiUrl = payDialogJob?.workerUpi
+    ? buildUpiUrl(
+        payDialogJob.workerUpi,
+        payDialogJob.workerName,
+        payDialogJob.amount,
+        `WorkerConnect: ${payDialogJob.jobTitle}`
+      )
+    : null;
 
   return (
     <AdminLayout>
@@ -132,7 +144,7 @@ export default function AdminPayouts() {
           <CardContent className="pt-4 pb-4">
             <p className="text-xs text-muted-foreground font-medium mb-1.5">Your UPI ID (payments sent from)</p>
             {editingAdminUpi ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Input
                   autoFocus
                   value={adminUpiDraft}
@@ -148,7 +160,7 @@ export default function AdminPayouts() {
                 {adminProfile?.upiId ? (
                   <span className="font-mono text-sm font-medium">{adminProfile.upiId}</span>
                 ) : (
-                  <span className="text-sm text-amber-600 italic">Set your UPI ID to enable payments</span>
+                  <span className="text-sm text-amber-600 italic">Set your UPI ID so workers know who's paying</span>
                 )}
                 <button onClick={() => { setAdminUpiDraft(adminProfile?.upiId ?? ""); setEditingAdminUpi(true); }} className="text-muted-foreground hover:text-foreground">
                   <Pencil className="h-3.5 w-3.5" />
@@ -180,7 +192,7 @@ export default function AdminPayouts() {
           </CardContent></Card>
         </div>
 
-        {isLoading ? (
+        {jobsLoading ? (
           <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>
         ) : activeJobs.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-border rounded-xl">
@@ -190,7 +202,6 @@ export default function AdminPayouts() {
           </div>
         ) : (
           <div className="space-y-5">
-            {/* ── In-Progress Jobs ── */}
             {assignedJobs.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">In Progress — awaiting customer confirmation</h3>
@@ -200,16 +211,8 @@ export default function AdminPayouts() {
                     <Card key={job.id}>
                       <CardContent className="pt-4 pb-4">
                         <div className="flex items-start gap-4">
-                          <div
-                            className="mt-0.5 cursor-pointer"
-                            onClick={() => setPendingComplete({ jobId: job.id, title: job.title })}
-                          >
-                            <Checkbox
-                              id={`done-${job.id}`}
-                              checked={false}
-                              onCheckedChange={() => setPendingComplete({ jobId: job.id, title: job.title })}
-                              className="w-5 h-5"
-                            />
+                          <div className="mt-0.5 cursor-pointer" onClick={() => setPendingComplete({ jobId: job.id, title: job.title })}>
+                            <Checkbox checked={false} onCheckedChange={() => setPendingComplete({ jobId: job.id, title: job.title })} className="w-5 h-5" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
@@ -217,7 +220,7 @@ export default function AdminPayouts() {
                                 <p className="font-semibold text-foreground">{job.title}</p>
                                 <p className="text-sm text-muted-foreground">{job.location} · {job.skillRequired}</p>
                                 {worker && (
-                                  <div className="mt-1.5 flex items-center gap-1.5 text-sm">
+                                  <div className="mt-1.5 flex items-center gap-1.5 flex-wrap text-sm">
                                     <span className="text-muted-foreground">Worker:</span>
                                     <span className="font-medium">{worker.name}</span>
                                     {worker.upiId && <span className="text-xs text-muted-foreground font-mono">({worker.upiId})</span>}
@@ -229,7 +232,7 @@ export default function AdminPayouts() {
                                 <Badge variant="secondary" className="text-xs">In Progress</Badge>
                               </div>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-2">✓ Check when customer confirms work is done</p>
+                            <p className="text-xs text-muted-foreground mt-2">Tick when the customer confirms the work is done</p>
                           </div>
                         </div>
                       </CardContent>
@@ -239,10 +242,9 @@ export default function AdminPayouts() {
               </div>
             )}
 
-            {/* ── Completed Jobs ── */}
             {completedJobs.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Completed — ready to pay</h3>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Completed — pay the worker</h3>
                 {completedJobs.map((job) => {
                   const worker = workerMap.get(job.assignedWorkerId!);
                   const existingPayout = payoutByJob.get(job.id);
@@ -275,9 +277,6 @@ export default function AdminPayouts() {
                                     {existingPayout.transactionReference && <span className="ml-1">· {existingPayout.transactionReference}</span>}
                                   </div>
                                 )}
-                                {job.completionNotes && (
-                                  <p className="text-xs text-muted-foreground mt-1 italic">"{job.completionNotes}"</p>
-                                )}
                               </div>
                               <div className="text-right shrink-0 space-y-2">
                                 <p className="text-lg font-bold">₹{Number(job.payoutAmount).toLocaleString()}</p>
@@ -288,14 +287,11 @@ export default function AdminPayouts() {
                                     size="sm"
                                     className="gap-1.5"
                                     disabled={!worker}
-                                    onClick={() => {
-                                      const payJob = buildPayJob(job.id);
-                                      if (payJob) setPendingPay(payJob);
-                                    }}
+                                    onClick={() => openPayDialog(job.id)}
                                     data-testid={`button-pay-${job.id}`}
                                   >
                                     <Wallet className="h-3.5 w-3.5" />
-                                    Pay Worker
+                                    Pay via UPI
                                   </Button>
                                 )}
                               </div>
@@ -337,55 +333,148 @@ export default function AdminPayouts() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Confirm payment dialog */}
-      <AlertDialog open={!!pendingPay} onOpenChange={() => setPendingPay(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Send Payment</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-3">
-                <p>Send <strong>₹{pendingPay?.amount?.toLocaleString()}</strong> to <strong>{pendingPay?.workerName}</strong> for <em>{pendingPay?.jobTitle}</em>?</p>
-                {(adminProfile?.upiId || pendingPay?.workerUpi) && (
-                  <div className="bg-muted rounded-lg p-3 text-sm space-y-1.5">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">From (you):</span>
-                      <span className="font-mono font-medium">{adminProfile?.upiId ?? <span className="italic text-amber-600">UPI not set</span>}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">To (worker):</span>
-                      <span className="font-mono font-medium">{pendingPay?.workerUpi ?? <span className="italic text-amber-600">No UPI registered</span>}</span>
-                    </div>
+      {/* UPI Payment dialog */}
+      <Dialog open={!!payDialogJob} onOpenChange={(open) => { if (!open) { setPayDialogJob(null); setPaymentSent(false); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Pay via UPI</DialogTitle>
+          </DialogHeader>
+
+          {payDialogJob && (
+            <div className="space-y-5">
+              {/* Payment summary */}
+              <div className="bg-muted rounded-xl p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="font-bold text-base">₹{payDialogJob.amount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">To</span>
+                  <span className="font-medium">{payDialogJob.workerName}</span>
+                </div>
+                {payDialogJob.workerUpi ? (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Worker UPI</span>
+                    <span className="font-mono font-medium">{payDialogJob.workerUpi}</span>
                   </div>
+                ) : (
+                  <p className="text-amber-600 text-xs">⚠ Worker hasn't added a UPI ID yet</p>
                 )}
-                {!pendingPay?.workerUpi && (
-                  <p className="text-xs text-amber-600">⚠ Worker has no UPI ID — payment will be recorded but no UPI transfer will occur until they add one.</p>
-                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">For</span>
+                  <span className="text-xs text-right max-w-[60%]">{payDialogJob.jobTitle}</span>
+                </div>
               </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={triggerPayout.isPending}
-              onClick={() => {
-                if (pendingPay) {
-                  triggerPayout.mutate({
-                    data: {
-                      workerId: pendingPay.workerId,
-                      jobId: pendingPay.jobId,
-                      amount: pendingPay.amount,
-                      senderUpiId: adminProfile?.upiId ?? undefined,
-                    },
-                  });
-                }
-              }}
-              data-testid="button-final-confirm-payout"
-            >
-              Confirm Payment
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
+              {payDialogJob.workerUpi && upiUrl ? (
+                !paymentSent ? (
+                  <div className="space-y-4">
+                    {/* QR Code */}
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="p-3 bg-white rounded-xl border shadow-sm">
+                        <QRCodeSVG
+                          value={upiUrl}
+                          size={180}
+                          level="M"
+                          includeMargin={false}
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <ScanLine className="h-3.5 w-3.5" />
+                        Scan with any UPI app — GPay, PhonePe, Paytm, BHIM
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="h-px flex-1 bg-border" />
+                      <span className="text-xs text-muted-foreground">or</span>
+                      <div className="h-px flex-1 bg-border" />
+                    </div>
+
+                    {/* Deep link button */}
+                    <Button
+                      className="w-full gap-2"
+                      onClick={() => { window.open(upiUrl, "_blank"); }}
+                    >
+                      <Smartphone className="h-4 w-4" />
+                      Open UPI App
+                    </Button>
+
+                    <p className="text-xs text-center text-muted-foreground">
+                      Complete the payment in your UPI app, then come back and confirm below.
+                    </p>
+
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setPaymentSent(true)}
+                    >
+                      I've sent the payment →
+                    </Button>
+                  </div>
+                ) : (
+                  /* Confirmation step after payment */
+                  <div className="space-y-4">
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center space-y-1">
+                      <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto" />
+                      <p className="font-semibold text-green-800">Payment sent!</p>
+                      <p className="text-xs text-green-700">
+                        ₹{payDialogJob.amount.toLocaleString()} from {adminProfile?.upiId ?? "your UPI"} → {payDialogJob.workerUpi}
+                      </p>
+                    </div>
+                    <p className="text-sm text-muted-foreground text-center">
+                      Click below to record this payment in WorkerConnect.
+                    </p>
+                    <Button
+                      className="w-full"
+                      disabled={triggerPayout.isPending}
+                      onClick={() => {
+                        triggerPayout.mutate({
+                          data: {
+                            workerId: payDialogJob.workerId,
+                            jobId: payDialogJob.jobId,
+                            amount: payDialogJob.amount,
+                            senderUpiId: adminProfile?.upiId ?? undefined,
+                          },
+                        });
+                      }}
+                      data-testid="button-final-confirm-payout"
+                    >
+                      {triggerPayout.isPending ? "Recording…" : "Confirm & Record Payment"}
+                    </Button>
+                    <Button variant="ghost" className="w-full text-xs" onClick={() => setPaymentSent(false)}>
+                      ← Back (resend payment)
+                    </Button>
+                  </div>
+                )
+              ) : (
+                /* Worker has no UPI — record anyway */
+                <div className="space-y-3">
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+                    This worker hasn't added a UPI ID. Ask them to update their profile, or record a manual payment below.
+                  </div>
+                  <Button
+                    className="w-full"
+                    disabled={triggerPayout.isPending}
+                    onClick={() => {
+                      triggerPayout.mutate({
+                        data: {
+                          workerId: payDialogJob.workerId,
+                          jobId: payDialogJob.jobId,
+                          amount: payDialogJob.amount,
+                          senderUpiId: adminProfile?.upiId ?? undefined,
+                        },
+                      });
+                    }}
+                  >
+                    {triggerPayout.isPending ? "Recording…" : "Record Manual Payment"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
