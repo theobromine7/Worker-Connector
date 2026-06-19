@@ -44,8 +44,8 @@ export default function AdminJobs() {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [skillFilter, setSkillFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [skillFilter, setSkillFilter] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [editJob, setEditJob] = useState<{ id: number; form: JobForm } | null>(null);
   const [cancelJobId, setCancelJobId] = useState<number | null>(null);
@@ -104,14 +104,14 @@ export default function AdminJobs() {
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-36"><SelectValue placeholder="All Status" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
               {JOB_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={skillFilter} onValueChange={setSkillFilter}>
             <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="All Skills" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Skills</SelectItem>
+              <SelectItem value="all">All Skills</SelectItem>
               {SKILL_CATEGORIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -186,7 +186,7 @@ export default function AdminJobs() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Skill Required</Label>
-                <Select value={form.skillRequired} onValueChange={(v) => setForm({ ...form, skillRequired: v })}>
+                <Select value={form.skillRequired || undefined} onValueChange={(v) => setForm({ ...form, skillRequired: v })}>
                   <SelectTrigger><SelectValue placeholder="Select skill" /></SelectTrigger>
                   <SelectContent>{SKILL_CATEGORIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
@@ -213,8 +213,8 @@ export default function AdminJobs() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Skill</Label>
-                  <Select value={editJob.form.skillRequired} onValueChange={(v) => setEditJob({ ...editJob, form: { ...editJob.form, skillRequired: v } })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select value={editJob.form.skillRequired || undefined} onValueChange={(v) => setEditJob({ ...editJob, form: { ...editJob.form, skillRequired: v } })}>
+                    <SelectTrigger><SelectValue placeholder="Select skill" /></SelectTrigger>
                     <SelectContent>{SKILL_CATEGORIES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>

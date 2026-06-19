@@ -32,7 +32,7 @@ export default function AdminWorkers() {
     if (!isAuthenticated || !isAdmin) setLocation("/admin/login");
   }, [isAuthenticated, isAdmin, setLocation]);
 
-  const { data: workers, isLoading } = useAdminListWorkers({ skill: skillFilter || undefined });
+  const { data: workers, isLoading } = useAdminListWorkers({ skill: skillFilter !== "all" ? skillFilter : undefined });
 
   const suspend = useSuspendWorker({
     mutation: {
@@ -82,7 +82,7 @@ export default function AdminWorkers() {
               <SelectValue placeholder="All Skills" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Skills</SelectItem>
+              <SelectItem value="all">All Skills</SelectItem>
               {SKILL_CATEGORIES.map((s) => (
                 <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}

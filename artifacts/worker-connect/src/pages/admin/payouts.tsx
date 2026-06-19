@@ -37,14 +37,14 @@ export default function AdminPayouts() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [confirmPayout, setConfirmPayout] = useState<PayoutForm | null>(null);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [form, setForm] = useState<PayoutForm>({ workerId: "", jobId: "", amount: "" });
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) setLocation("/admin/login");
   }, [isAuthenticated, isAdmin, setLocation]);
 
-  const { data: payouts, isLoading } = useListPayouts({ status: statusFilter || undefined });
+  const { data: payouts, isLoading } = useListPayouts({ status: statusFilter !== "all" ? statusFilter : undefined });
   const { data: workers } = useAdminListWorkers({});
   const { data: jobs } = useListJobs({ status: "completed" });
 
@@ -109,7 +109,7 @@ export default function AdminPayouts() {
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40"><SelectValue placeholder="All Status" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
               {["pending", "processing", "paid", "failed"].map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
             </SelectContent>
           </Select>

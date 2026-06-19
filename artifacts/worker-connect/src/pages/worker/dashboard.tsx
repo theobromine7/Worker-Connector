@@ -31,7 +31,7 @@ export default function WorkerDashboard() {
   }, [isAuthenticated, isWorker, setLocation]);
 
   const { data: jobs, isLoading } = useListJobs({
-    skill: skillFilter || undefined,
+    skill: skillFilter !== "all" ? skillFilter : undefined,
     location: locationFilter || undefined,
     status: "open",
   });
@@ -91,7 +91,7 @@ export default function WorkerDashboard() {
               <SelectValue placeholder="All Skills" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Skills</SelectItem>
+              <SelectItem value="all">All Skills</SelectItem>
               {SKILL_CATEGORIES.map((s) => (
                 <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
