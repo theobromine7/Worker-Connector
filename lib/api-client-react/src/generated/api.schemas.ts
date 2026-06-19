@@ -110,6 +110,10 @@ export interface Payout {
   /** @nullable */
   transactionReference?: string | null;
   /** @nullable */
+  senderUpiId?: string | null;
+  /** @nullable */
+  receiverUpiId?: string | null;
+  /** @nullable */
   paidAt?: string | null;
   createdAt: string;
   worker?: Worker;
@@ -161,6 +165,18 @@ export interface PayoutInput {
   workerId: number;
   jobId: number;
   amount: number;
+  senderUpiId?: string;
+}
+
+export interface AdminProfile {
+  id: number;
+  username: string;
+  /** @nullable */
+  upiId?: string | null;
+}
+
+export interface UpdateAdminProfileInput {
+  upiId?: string;
 }
 
 export interface DashboardStats {

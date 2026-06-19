@@ -34,7 +34,7 @@ export default function AdminApplicants() {
   }, [isAuthenticated, isAdmin, setLocation]);
 
   const { data: job } = useGetJob(jobId, { query: { enabled: !!jobId, queryKey: ["getJob", jobId] } });
-  const { data: applications, isLoading } = useListJobApplications(jobId, { query: { enabled: !!jobId, queryKey: ["listJobApplications", jobId] } });
+  const { data: applications, isLoading } = useListJobApplications(jobId, { query: { enabled: !!jobId, queryKey: getListJobApplicationsQueryKey(jobId) } });
 
   const updateApp = useUpdateApplication({
     mutation: {

@@ -40,12 +40,17 @@ router.post("/payouts", requireAdmin, async (req, res): Promise<void> => {
     return;
   }
 
+  // Auto-fill receiverUpiId from the worker's registered UPI ID
+  const [workerForUpi] = await db.select({ upiId: workersTable.upiId }).from(workersTable).where(eq(workersTable.id, parsed.data.workerId)).limit(1);
+
   const [payout] = await db.insert(payoutsTable).values({
     workerId: parsed.data.workerId,
     jobId: parsed.data.jobId,
     amount: String(parsed.data.amount),
     status: "pending",
     transactionReference: null,
+    senderUpiId: parsed.data.senderUpiId ?? null,
+    receiverUpiId: workerForUpi?.upiId ?? null,
     paidAt: null,
   }).returning();
 

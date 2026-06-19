@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useListPayouts, useTriggerPayout, useAdminListWorkers, useListJobs, getListPayoutsQueryKey } from "@workspace/api-client-react";
+import {
+  useListPayouts, useTriggerPayout, useAdminListWorkers, useListJobs,
+  getListPayoutsQueryKey, useGetAdminProfile, useUpdateAdminProfile,
+  getGetAdminProfileQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/admin-layout";
 import { useAuth } from "@/hooks/use-auth";
@@ -17,7 +21,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Plus, Clock, CheckCircle, XCircle } from "lucide-react";
+import { DollarSign, Plus, Clock, CheckCircle, Pencil, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -27,7 +31,7 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
   failed: { label: "Failed", variant: "destructive" },
 };
 
-type PayoutForm = { workerId: string; jobId: string; amount: string };
+type PayoutForm = { workerId: string; jobId: string; amount: string; senderUpiId: string };
 
 export default function AdminPayouts() {
   const [, setLocation] = useLocation();
@@ -38,7 +42,9 @@ export default function AdminPayouts() {
   const [createOpen, setCreateOpen] = useState(false);
   const [confirmPayout, setConfirmPayout] = useState<PayoutForm | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [form, setForm] = useState<PayoutForm>({ workerId: "", jobId: "", amount: "" });
+  const [form, setForm] = useState<PayoutForm>({ workerId: "", jobId: "", amount: "", senderUpiId: "" });
+  const [editingAdminUpi, setEditingAdminUpi] = useState(false);
+  const [adminUpiDraft, setAdminUpiDraft] = useState("");
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) setLocation("/admin/login");
@@ -47,6 +53,25 @@ export default function AdminPayouts() {
   const { data: payouts, isLoading } = useListPayouts({ status: statusFilter !== "all" ? statusFilter : undefined });
   const { data: workers } = useAdminListWorkers({});
   const { data: jobs } = useListJobs({ status: undefined });
+  const { data: adminProfile } = useGetAdminProfile();
+
+  // Sync admin UPI into form when dialog opens or profile loads
+  useEffect(() => {
+    if (adminProfile?.upiId && !form.senderUpiId) {
+      setForm((f) => ({ ...f, senderUpiId: adminProfile.upiId ?? "" }));
+    }
+  }, [adminProfile?.upiId]);
+
+  const updateAdminProfile = useUpdateAdminProfile({
+    mutation: {
+      onSuccess: (data) => {
+        queryClient.setQueryData(getGetAdminProfileQueryKey(), data);
+        setEditingAdminUpi(false);
+        toast({ title: "Your UPI ID saved" });
+      },
+      onError: () => toast({ title: "Failed to save UPI ID", variant: "destructive" }),
+    },
+  });
 
   const trigger = useTriggerPayout({
     mutation: {
@@ -55,7 +80,7 @@ export default function AdminPayouts() {
         queryClient.invalidateQueries({ queryKey: getListPayoutsQueryKey() });
         setCreateOpen(false);
         setConfirmPayout(null);
-        setForm({ workerId: "", jobId: "", amount: "" });
+        setForm({ workerId: "", jobId: "", amount: "", senderUpiId: adminProfile?.upiId ?? "" });
       },
       onError: () => toast({ title: "Failed to trigger payout", variant: "destructive" }),
     },
@@ -66,6 +91,14 @@ export default function AdminPayouts() {
     setConfirmPayout(form);
     setCreateOpen(false);
   }
+
+  function handleDialogOpen() {
+    setForm({ workerId: "", jobId: "", amount: "", senderUpiId: adminProfile?.upiId ?? "" });
+    setCreateOpen(true);
+  }
+
+  const selectedWorker = workers?.find((w) => String(w.id) === form.workerId);
+  const workerUpi = selectedWorker?.upiId ?? null;
 
   const totalPaid = payouts?.filter((p) => p.status === "paid").reduce((sum, p) => sum + Number(p.amount), 0) ?? 0;
   const pendingCount = payouts?.filter((p) => p.status === "pending").length ?? 0;
@@ -78,11 +111,45 @@ export default function AdminPayouts() {
             <h2 className="text-2xl font-bold text-foreground">Payouts</h2>
             <p className="text-muted-foreground mt-1">Manage worker payouts</p>
           </div>
-          <Button onClick={() => setCreateOpen(true)} className="gap-2" data-testid="button-trigger-payout">
+          <Button onClick={handleDialogOpen} className="gap-2" data-testid="button-trigger-payout">
             <Plus className="h-4 w-4" />
             Trigger Payout
           </Button>
         </div>
+
+        {/* Admin UPI ID row */}
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground font-medium mb-0.5">Your UPI ID (sender)</p>
+                {editingAdminUpi ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      autoFocus
+                      value={adminUpiDraft}
+                      onChange={(e) => setAdminUpiDraft(e.target.value)}
+                      placeholder="yourname@upi"
+                      className="h-8 text-sm max-w-xs"
+                    />
+                    <Button size="sm" onClick={() => updateAdminProfile.mutate({ data: { upiId: adminUpiDraft } })} disabled={!adminUpiDraft || updateAdminProfile.isPending}>Save</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingAdminUpi(false)}>Cancel</Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-foreground">{adminProfile?.upiId ?? <span className="text-muted-foreground italic">Not set</span>}</p>
+                    <button
+                      onClick={() => { setAdminUpiDraft(adminProfile?.upiId ?? ""); setEditingAdminUpi(true); }}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <Card><CardContent className="pt-5 pb-5">
@@ -121,7 +188,7 @@ export default function AdminPayouts() {
           <div className="text-center py-16 border border-dashed border-border rounded-xl">
             <DollarSign className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-muted-foreground font-medium">No payouts yet</p>
-            <Button className="mt-4 gap-2" onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4" />Trigger Payout</Button>
+            <Button className="mt-4 gap-2" onClick={handleDialogOpen}><Plus className="h-4 w-4" />Trigger Payout</Button>
           </div>
         ) : (
           <div className="space-y-3">
@@ -130,7 +197,7 @@ export default function AdminPayouts() {
               return (
                 <Card key={payout.id} data-testid={`card-payout-${payout.id}`}>
                   <CardContent className="pt-4 pb-4">
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <p className="font-medium text-foreground">{payout.worker?.name ?? `Worker #${payout.workerId}`}</p>
                         <p className="text-sm text-muted-foreground mt-0.5">{payout.job?.title ?? `Job #${payout.jobId}`}</p>
@@ -138,6 +205,13 @@ export default function AdminPayouts() {
                           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{format(new Date(payout.createdAt), "MMM d, yyyy")}</span>
                           {payout.transactionReference && <span>Ref: {payout.transactionReference}</span>}
                         </div>
+                        {(payout.senderUpiId || payout.receiverUpiId) && (
+                          <div className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground flex-wrap">
+                            {payout.senderUpiId && <span className="font-mono bg-muted px-1.5 py-0.5 rounded">{payout.senderUpiId}</span>}
+                            {payout.senderUpiId && payout.receiverUpiId && <ArrowRight className="h-3 w-3 shrink-0" />}
+                            {payout.receiverUpiId && <span className="font-mono bg-muted px-1.5 py-0.5 rounded">{payout.receiverUpiId}</span>}
+                          </div>
+                        )}
                       </div>
                       <div className="text-right shrink-0 space-y-1">
                         <p className="text-lg font-bold text-foreground">₹{Number(payout.amount).toLocaleString()}</p>
@@ -158,11 +232,26 @@ export default function AdminPayouts() {
           <DialogHeader><DialogTitle>Trigger Payout</DialogTitle></DialogHeader>
           <form onSubmit={handleFormSubmit} className="space-y-4 mt-2">
             <div className="space-y-2">
+              <Label>Your UPI ID (sender)</Label>
+              <Input
+                placeholder="yourname@upi"
+                value={form.senderUpiId}
+                onChange={(e) => setForm({ ...form, senderUpiId: e.target.value })}
+                data-testid="input-sender-upi"
+              />
+            </div>
+            <div className="space-y-2">
               <Label>Worker</Label>
               <Select value={form.workerId} onValueChange={(v) => setForm({ ...form, workerId: v })}>
                 <SelectTrigger data-testid="select-payout-worker"><SelectValue placeholder="Select worker" /></SelectTrigger>
                 <SelectContent>{workers?.map((w) => <SelectItem key={w.id} value={String(w.id)}>{w.name} — {w.phone}</SelectItem>)}</SelectContent>
               </Select>
+              {workerUpi && (
+                <p className="text-xs text-muted-foreground">Worker UPI: <span className="font-mono text-foreground">{workerUpi}</span></p>
+              )}
+              {form.workerId && !workerUpi && (
+                <p className="text-xs text-amber-600">Worker has no UPI ID registered</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Completed Job</Label>
@@ -188,8 +277,26 @@ export default function AdminPayouts() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Payout</AlertDialogTitle>
-            <AlertDialogDescription>
-              Trigger a payout of <strong>₹{confirmPayout?.amount}</strong> to the selected worker? This will initiate the payment process.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>You are about to send <strong>₹{confirmPayout?.amount}</strong> to <strong>{workers?.find((w) => String(w.id) === confirmPayout?.workerId)?.name ?? "worker"}</strong>.</p>
+                {(confirmPayout?.senderUpiId || workerUpi) && (
+                  <div className="bg-muted rounded-lg p-3 text-sm space-y-1.5">
+                    {confirmPayout?.senderUpiId && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">From (Admin):</span>
+                        <span className="font-mono font-medium">{confirmPayout.senderUpiId}</span>
+                      </div>
+                    )}
+                    {workerUpi && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">To (Worker):</span>
+                        <span className="font-mono font-medium">{workerUpi}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -197,7 +304,14 @@ export default function AdminPayouts() {
             <AlertDialogAction
               onClick={() => {
                 if (confirmPayout) {
-                  trigger.mutate({ data: { workerId: parseInt(confirmPayout.workerId), jobId: parseInt(confirmPayout.jobId), amount: parseFloat(confirmPayout.amount) } });
+                  trigger.mutate({
+                    data: {
+                      workerId: parseInt(confirmPayout.workerId),
+                      jobId: parseInt(confirmPayout.jobId),
+                      amount: parseFloat(confirmPayout.amount),
+                      senderUpiId: confirmPayout.senderUpiId || undefined,
+                    },
+                  });
                 }
               }}
               data-testid="button-final-confirm-payout"

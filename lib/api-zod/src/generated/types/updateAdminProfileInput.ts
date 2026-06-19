@@ -6,9 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface PayoutInput {
-  workerId: number;
-  jobId: number;
-  amount: number;
-  senderUpiId?: string;
+export interface UpdateAdminProfileInput {
+  upiId?: string;
 }

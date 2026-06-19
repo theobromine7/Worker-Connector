@@ -9,6 +9,8 @@ export const payoutsTable = pgTable("payouts", {
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   status: text("status").notNull().default("pending"),
   transactionReference: text("transaction_reference"),
+  senderUpiId: text("sender_upi_id"),
+  receiverUpiId: text("receiver_upi_id"),
   paidAt: timestamp("paid_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

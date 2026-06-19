@@ -22,6 +22,7 @@ import type {
 import type {
   AdminListWorkersParams,
   AdminLoginInput,
+  AdminProfile,
   Application,
   ApplicationStatusUpdate,
   AuthResponse,
@@ -44,6 +45,7 @@ import type {
   PayoutsReport,
   SendOtpInput,
   SuspendInput,
+  UpdateAdminProfileInput,
   VerifyOtpInput,
   Worker,
   WorkerRegistration,
@@ -1843,6 +1845,154 @@ export function useListMyPayouts<TData = Awaited<ReturnType<typeof listMyPayouts
 
 
 
+
+export const getGetAdminProfileUrl = () => {
+
+
+
+
+  return `/api/admin/profile`
+}
+
+/**
+ * @summary Get current admin profile
+ */
+export const getAdminProfile = async ( options?: RequestInit): Promise<AdminProfile> => {
+
+  return customFetch<AdminProfile>(getGetAdminProfileUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminProfileQueryKey = () => {
+    return [
+    `/api/admin/profile`
+    ] as const;
+    }
+
+
+export const getGetAdminProfileQueryOptions = <TData = Awaited<ReturnType<typeof getAdminProfile>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminProfileQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminProfile>>> = ({ signal }) => getAdminProfile({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminProfile>>>
+export type GetAdminProfileQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get current admin profile
+ */
+
+export function useGetAdminProfile<TData = Awaited<ReturnType<typeof getAdminProfile>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminProfileQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateAdminProfileUrl = () => {
+
+
+
+
+  return `/api/admin/profile`
+}
+
+/**
+ * @summary Update admin profile (e.g. UPI ID)
+ */
+export const updateAdminProfile = async (updateAdminProfileInput: UpdateAdminProfileInput, options?: RequestInit): Promise<AdminProfile> => {
+
+  return customFetch<AdminProfile>(getUpdateAdminProfileUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateAdminProfileInput,)
+  }
+);}
+
+
+
+
+export const getUpdateAdminProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminProfile>>, TError,{data: BodyType<UpdateAdminProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminProfile>>, TError,{data: BodyType<UpdateAdminProfileInput>}, TContext> => {
+
+const mutationKey = ['updateAdminProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminProfile>>, {data: BodyType<UpdateAdminProfileInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateAdminProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminProfile>>>
+    export type UpdateAdminProfileMutationBody = BodyType<UpdateAdminProfileInput>
+    export type UpdateAdminProfileMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update admin profile (e.g. UPI ID)
+ */
+export const useUpdateAdminProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminProfile>>, TError,{data: BodyType<UpdateAdminProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminProfile>>,
+        TError,
+        {data: BodyType<UpdateAdminProfileInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminProfileMutationOptions(options));
+    }
 
 export const getAdminListWorkersUrl = (params?: AdminListWorkersParams,) => {
   const normalizedParams = new URLSearchParams();

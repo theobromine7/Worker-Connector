@@ -188,6 +188,8 @@ export const GetWorkerEarningsResponse = zod.object({
   "amount": zod.number(),
   "status": zod.string(),
   "transactionReference": zod.string().nullish(),
+  "senderUpiId": zod.string().nullish(),
+  "receiverUpiId": zod.string().nullish(),
   "paidAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "worker": zod.object({
@@ -505,6 +507,8 @@ export const ListPayoutsResponseItem = zod.object({
   "amount": zod.number(),
   "status": zod.string(),
   "transactionReference": zod.string().nullish(),
+  "senderUpiId": zod.string().nullish(),
+  "receiverUpiId": zod.string().nullish(),
   "paidAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "worker": zod.object({
@@ -543,7 +547,8 @@ export const ListPayoutsResponse = zod.array(ListPayoutsResponseItem)
 export const TriggerPayoutBody = zod.object({
   "workerId": zod.number(),
   "jobId": zod.number(),
-  "amount": zod.number()
+  "amount": zod.number(),
+  "senderUpiId": zod.string().optional()
 })
 
 
@@ -557,6 +562,8 @@ export const ListMyPayoutsResponseItem = zod.object({
   "amount": zod.number(),
   "status": zod.string(),
   "transactionReference": zod.string().nullish(),
+  "senderUpiId": zod.string().nullish(),
+  "receiverUpiId": zod.string().nullish(),
   "paidAt": zod.string().nullish(),
   "createdAt": zod.string(),
   "worker": zod.object({
@@ -587,6 +594,30 @@ export const ListMyPayoutsResponseItem = zod.object({
 }).optional()
 })
 export const ListMyPayoutsResponse = zod.array(ListMyPayoutsResponseItem)
+
+
+/**
+ * @summary Get current admin profile
+ */
+export const GetAdminProfileResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "upiId": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update admin profile (e.g. UPI ID)
+ */
+export const UpdateAdminProfileBody = zod.object({
+  "upiId": zod.string().optional()
+})
+
+export const UpdateAdminProfileResponse = zod.object({
+  "id": zod.number(),
+  "username": zod.string(),
+  "upiId": zod.string().nullish()
+})
 
 
 /**

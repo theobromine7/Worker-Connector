@@ -8,6 +8,7 @@
 
 export * from './adminListWorkersParams';
 export * from './adminLoginInput';
+export * from './adminProfile';
 export * from './application';
 export * from './applicationStatusUpdate';
 export * from './authResponse';
@@ -34,6 +35,7 @@ export * from './payoutInput';
 export * from './payoutsReport';
 export * from './sendOtpInput';
 export * from './suspendInput';
+export * from './updateAdminProfileInput';
 export * from './verifyOtpInput';
 export * from './worker';
 export * from './workerRegistration';
