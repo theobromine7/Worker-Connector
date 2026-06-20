@@ -152,15 +152,15 @@ export default function AdminJobs() {
                             Applicants
                           </Link>
                         )}
+                        {(job.status === "open" || job.status === "assigned") && (
+                          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditJob({ id: job.id, form: { title: job.title, description: job.description, skillRequired: job.skillRequired, location: job.location, payoutAmount: String(job.payoutAmount) } })} data-testid={`button-edit-job-${job.id}`}>
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         {job.status === "open" && (
-                          <>
-                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setEditJob({ id: job.id, form: { title: job.title, description: job.description, skillRequired: job.skillRequired, location: job.location, payoutAmount: String(job.payoutAmount) } })} data-testid={`button-edit-job-${job.id}`}>
-                              <Edit className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="outline" size="icon" className="h-8 w-8 text-destructive" onClick={() => setCancelJobId(job.id)} data-testid={`button-cancel-job-${job.id}`}>
-                              <XCircle className="h-3.5 w-3.5" />
-                            </Button>
-                          </>
+                          <Button variant="outline" size="icon" className="h-8 w-8 text-destructive" onClick={() => setCancelJobId(job.id)} data-testid={`button-cancel-job-${job.id}`}>
+                            <XCircle className="h-3.5 w-3.5" />
+                          </Button>
                         )}
                         {job.status === "assigned" && (
                           <Button size="sm" className="gap-1" onClick={() => setCompleteTarget({ id: job.id, notes: "" })} data-testid={`button-complete-job-${job.id}`}>
